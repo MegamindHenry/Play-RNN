@@ -1,6 +1,6 @@
 import keras
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation
+from keras.models import Sequential, Model
+from keras.layers import Dense, Dropout, Activation, Input, Embedding, LSTM, Concatenate
 from keras.optimizers import SGD
 import numpy as np
 
@@ -34,9 +34,6 @@ choice_table = ChoiceTable()
 
 z = choice_table.encode('D')
 
-print(z)
-print(choice_table.decode(z))
-
 x_train = np.random.random((1000, 20))
 y_train = keras.utils.to_categorical(np.random.randint(5, size=(1000, 1)), num_classes=5)
 z_train = np.array([z for i in range(1000)])
@@ -45,12 +42,19 @@ x_test = np.random.random((100, 20))
 y_test = keras.utils.to_categorical(np.random.randint(5, size=(100, 1)), num_classes=5)
 z_test = np.array([z for i in range(100)])
 
+
+print(x_train.shape)
+
 model = Sequential()
 # Dense(64) is a fully-connected layer with 64 hidden units.
 # in the first layer, you must specify the expected input data shape:
 # here, 20-dimensional vectors.
+# main_input = Input(shape=(1,), dtype='int32', name='main_input')
+
+# model.add(Embedding(output_dim=32, input_dim=1000, input_length=1))
 model.add(Dense(64, activation='relu', input_dim=20))
 model.add(Dropout(0.5))
+# model.add(Concatenate(main_input))
 model.add(Dense(64, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(5, activation='softmax'))
@@ -59,6 +63,10 @@ sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
 model.compile(loss='categorical_crossentropy',
               optimizer=sgd,
               metrics=['accuracy'])
+
+model.summary()
+
+# quit(1)
 
 # model.fit(x_train, z_train,
 #           epochs=20,
