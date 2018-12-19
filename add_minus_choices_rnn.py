@@ -82,7 +82,21 @@ class colors:
     close = '\033[0m'
 
 
-CHOICES = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E'}
+class ChoiceTable:
+    choices_indices = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4}
+    indices_choices = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E'}
+
+    def encode(self, C):
+        x = np.zeros((1, 5))
+        for i, c in enumerate(C):
+            x[i, self.choices_indices[c]] = 1
+        return x
+
+    def decode(self, x):
+        choice = np.argmax(x)
+        return self.indices_choices[choice]
+
+choice_table = ChoiceTable()
 TOLERANCE = 50
 
 def add_choices(ans):
@@ -93,10 +107,10 @@ def add_choices(ans):
 def find_choices(ans, choices):
     for k, v in enumerate(choices):
         if ans == v:
-            return CHOICES[k]
+            return choice_table.indices_choices[k]
 
 # Parameters for the model and dataset.
-TRAINING_SIZE = 50000
+TRAINING_SIZE = 50
 DIGITS = 3
 REVERSE = True
 
@@ -104,6 +118,7 @@ REVERSE = True
 # int is DIGITS.
 MAXLEN = 50
 MAXLEN_ANS = 1
+LEN_CHOICES = 5
 
 # All the numbers, plus sign and space for padding.
 chars = '0123456789-adminus ABCDE?'
@@ -171,10 +186,12 @@ print('Total addition questions:', len(questions))
 print('Vectorization...')
 x = np.zeros((len(questions), MAXLEN, len(chars)), dtype=np.bool)
 y = np.zeros((len(questions), MAXLEN_ANS, len(ans_chars)), dtype=np.bool)
+z = np.zeros((len(questions), MAXLEN_ANS, LEN_CHOICES), dtype=np.float32)
 for i, sentence in enumerate(questions):
     x[i] = ctable.encode(sentence, MAXLEN)
 for i, sentence in enumerate(expected):
     y[i] = ans_ctable.encode(sentence, MAXLEN_ANS)
+    z[i] = choice_table.encode(sentence)
 
 # Shuffle (x, y) in unison as the later parts of x will almost all be larger
 # digits.
@@ -182,19 +199,29 @@ indices = np.arange(len(y))
 np.random.shuffle(indices)
 x = x[indices]
 y = y[indices]
+z = z[indices]
 
 # Explicitly set apart 10% for validation data that we never train over.
 split_at = len(x) - len(x) // 10
 (x_train, x_val) = x[:split_at], x[split_at:]
 (y_train, y_val) = y[:split_at], y[split_at:]
+(z_train, z_val) = z[:split_at], z[split_at:]
 
 print('Training Data:')
 print(x_train.shape)
 print(y_train.shape)
+print(z_train.shape)
 
 print('Validation Data:')
 print(x_val.shape)
 print(y_val.shape)
+print(z_val.shape)
+
+for temp in z_val[:10]:
+    print(z_val)
+
+
+quit(1)
 
 # Try replacing GRU, or SimpleRNN.
 RNN = layers.LSTM
