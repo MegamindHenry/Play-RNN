@@ -81,21 +81,35 @@ class colors:
     fail = '\033[91m'
     close = '\033[0m'
 
+
+CHOICES = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E'}
+TOLERANCE = 50
+
+def add_choices(ans):
+    choices = [ans + i * TOLERANCE for i in range(-2, 3)]
+    np.random.shuffle(choices)
+    return choices
+
+def find_choices(ans, choices):
+    for k, v in enumerate(choices):
+        if ans == v:
+            return CHOICES[k]
+
 # Parameters for the model and dataset.
-TRAINING_SIZE = 500
+TRAINING_SIZE = 50000
 DIGITS = 3
 REVERSE = True
 
 # Maximum length of input is 'int + int' (e.g., '345+678'). Maximum length of
 # int is DIGITS.
-MAXLEN = DIGITS + 7 + DIGITS
+MAXLEN = 50
 MAXLEN_ANS = 1
 
 # All the numbers, plus sign and space for padding.
-chars = '0123456789-adminus AB'
+chars = '0123456789-adminus ABCDE?'
 ctable = CharacterTable(chars)
 
-ans_chars = 'AB'
+ans_chars = 'ABCDE'
 ans_ctable = CharacterTable(ans_chars)
 
 questions = []
@@ -112,10 +126,13 @@ while len(questions) < TRAINING_SIZE:
     if key in seen:
         continue
     seen.add(key)
+
+    ans = a + b
+    choices = add_choices(ans)
+    choice = find_choices(ans, choices)
     # Pad the data with spaces such that it is always MAXLEN.
-    q = '{} add {}'.format(a, b)
+    q = '{} add {} ?A{} ?B{} ?C{} ?D{} ?E{}'.format(a, b, choices[0], choices[1], choices[2], choices[3], choices[4])
     query = q + ' ' * (MAXLEN - len(q))
-    ans = 'A'
     # Answers can be of maximum size DIGITS + 1.
     # ans += ' ' * (MAXLEN_ANS - len(ans))
     if REVERSE:
@@ -123,7 +140,7 @@ while len(questions) < TRAINING_SIZE:
         # space used for padding.)
         query = query[::-1]
     questions.append(query)
-    expected.append(ans)
+    expected.append(choice)
 while len(questions) < (TRAINING_SIZE * 2):
     f = lambda: int(''.join(np.random.choice(list('0123456789'))
                     for i in range(np.random.randint(1, DIGITS + 1))))
@@ -134,10 +151,13 @@ while len(questions) < (TRAINING_SIZE * 2):
     if key in seen:
         continue
     seen.add(key)
+
+    ans = a - b
+    choices = add_choices(ans)
+    choice = find_choices(ans, choices)
     # Pad the data with spaces such that it is always MAXLEN.
-    q = '{} minus {}'.format(a, b)
+    q = '{} minus {} ?A{} ?B{} ?C{} ?D{} ?E{}'.format(a, b, choices[0], choices[1], choices[2], choices[3], choices[4])
     query = q + ' ' * (MAXLEN - len(q))
-    ans = 'B'
     # Answers can be of maximum size DIGITS + 1.
     # ans += ' ' * (MAXLEN_ANS - len(ans))
     if REVERSE:
@@ -145,7 +165,7 @@ while len(questions) < (TRAINING_SIZE * 2):
         # space used for padding.)
         query = query[::-1]
     questions.append(query)
-    expected.append(ans)
+    expected.append(choice)
 print('Total addition questions:', len(questions))
 
 print('Vectorization...')
