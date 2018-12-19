@@ -82,7 +82,7 @@ class colors:
     close = '\033[0m'
 
 # Parameters for the model and dataset.
-TRAINING_SIZE = 50
+TRAINING_SIZE = 500
 DIGITS = 3
 REVERSE = True
 
@@ -94,6 +94,9 @@ MAXLEN_ANS = 1
 # All the numbers, plus sign and space for padding.
 chars = '0123456789-adminus AB'
 ctable = CharacterTable(chars)
+
+ans_chars = 'AB'
+ans_ctable = CharacterTable(ans_chars)
 
 questions = []
 expected = []
@@ -147,11 +150,11 @@ print('Total addition questions:', len(questions))
 
 print('Vectorization...')
 x = np.zeros((len(questions), MAXLEN, len(chars)), dtype=np.bool)
-y = np.zeros((len(questions), MAXLEN_ANS, len(chars)), dtype=np.bool)
+y = np.zeros((len(questions), MAXLEN_ANS, len(ans_chars)), dtype=np.bool)
 for i, sentence in enumerate(questions):
     x[i] = ctable.encode(sentence, MAXLEN)
 for i, sentence in enumerate(expected):
-    y[i] = ctable.encode(sentence, MAXLEN_ANS)
+    y[i] = ans_ctable.encode(sentence, MAXLEN_ANS)
 
 # Shuffle (x, y) in unison as the later parts of x will almost all be larger
 # digits.
@@ -199,7 +202,7 @@ for _ in range(LAYERS):
 
 # Apply a dense layer to the every temporal slice of an input. For each of step
 # of the output sequence, decide which character should be chosen.
-model.add(layers.TimeDistributed(layers.Dense(len(chars), activation='softmax')))
+model.add(layers.TimeDistributed(layers.Dense(len(ans_chars), activation='softmax')))
 model.compile(loss='categorical_crossentropy',
               optimizer='adam',
               metrics=['accuracy'])
@@ -222,8 +225,8 @@ for iteration in range(1, 2):
         rowx, rowy = x_val[np.array([ind])], y_val[np.array([ind])]
         preds = model.predict_classes(rowx, verbose=0)
         q = ctable.decode(rowx[0])
-        correct = ctable.decode(rowy[0])
-        guess = ctable.decode(preds[0], calc_argmax=False)
+        correct = ans_ctable.decode(rowy[0])
+        guess = ans_ctable.decode(preds[0], calc_argmax=False)
         print('Q', q[::-1] if REVERSE else q, end=' ')
         print('T', correct, end=' ')
         if correct == guess:
