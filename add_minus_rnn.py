@@ -88,10 +88,10 @@ REVERSE = True
 
 # Maximum length of input is 'int + int' (e.g., '345+678'). Maximum length of
 # int is DIGITS.
-MAXLEN = DIGITS + 5 + DIGITS
+MAXLEN = DIGITS + 7 + DIGITS
 
 # All the numbers, plus sign and space for padding.
-chars = '0123456789ad '
+chars = '0123456789-adminus '
 ctable = CharacterTable(chars)
 
 questions = []
@@ -112,6 +112,28 @@ while len(questions) < TRAINING_SIZE:
     q = '{} add {}'.format(a, b)
     query = q + ' ' * (MAXLEN - len(q))
     ans = str(a + b)
+    # Answers can be of maximum size DIGITS + 1.
+    ans += ' ' * (DIGITS + 1 - len(ans))
+    if REVERSE:
+        # Reverse the query, e.g., '12+345  ' becomes '  543+21'. (Note the
+        # space used for padding.)
+        query = query[::-1]
+    questions.append(query)
+    expected.append(ans)
+while len(questions) < (TRAINING_SIZE * 2):
+    f = lambda: int(''.join(np.random.choice(list('0123456789'))
+                    for i in range(np.random.randint(1, DIGITS + 1))))
+    a, b = f(), f()
+    # Skip any addition questions we've already seen
+    # Also skip any such that x+Y == Y+x (hence the sorting).
+    key = tuple(sorted((a, b)))
+    if key in seen:
+        continue
+    seen.add(key)
+    # Pad the data with spaces such that it is always MAXLEN.
+    q = '{} minus {}'.format(a, b)
+    query = q + ' ' * (MAXLEN - len(q))
+    ans = str(a - b)
     # Answers can be of maximum size DIGITS + 1.
     ans += ' ' * (DIGITS + 1 - len(ans))
     if REVERSE:
@@ -184,13 +206,13 @@ model.summary()
 
 # Train the model each generation and show predictions against the validation
 # dataset.
-for iteration in range(1, 2):
+for iteration in range(1, 10):
     print()
     print('-' * 50)
     print('Iteration', iteration)
     model.fit(x_train, y_train,
               batch_size=BATCH_SIZE,
-              epochs=10,
+              epochs=1,
               validation_data=(x_val, y_val))
     # Select 10 samples from the validation set at random so we can visualize
     # errors.

@@ -7,7 +7,8 @@ import sys
 
 for x in range(50):
     b = "Loading" + "." * (x % 5)
-    sys.stdout.write(b)
-    sys.stdout.flush()
+    # sys.stdout.write(b)
+    # sys.stdout.flush()
     # sys.stdout.write("\033[F")
+    print(b, end="", flush=True)
     time.sleep(0.5)
